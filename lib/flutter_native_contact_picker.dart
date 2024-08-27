@@ -60,7 +60,7 @@ class Contact {
   final List<String>? phoneNumbers;
 
   @override
-  String toString() => '$fullName: $phoneNumbers';
+  String toString() => '$firstName $lastName ($fullName). Phone: $phoneNumbers, Email: $emailAddresses';
 }
 
 /// Represents a phone number selected by the user.

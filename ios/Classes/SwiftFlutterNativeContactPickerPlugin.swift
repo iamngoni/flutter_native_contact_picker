@@ -25,22 +25,13 @@ class SinglePickerHandler: PickerHandler {
 
         var data = Dictionary<String, Any>()
         data["fullName"] = CNContactFormatter.string(from: contact, style: CNContactFormatterStyle.fullName)
-        if let givenName = contact.givenName {
-            data["givenName"] = givenName
-        }
-        if let familyName = contact.familyName {
-            data["familyName"] = familyName
-        }
-        if let emailAddresses = contact.emailAddresses {
-            let emailAddresses: [String] = emailAddresses.compactMap(\.value)
-            data["emailAddresses"] = emailAddresses
-        }
-        if let postalAddresses = contact.postalAddresses {
-            let postalAddresses: [String] = postalAddresses.compactMap(\.value)
-            data["postalAddresses"] = postalAddresses
-        }
-
-        let numbers: Array<String> = contact.phoneNumbers.compactMap { $0.value.stringValue as String }
+        data["givenName"] = contact.givenName
+        data["familyName"] = contact.familyName
+        let emailAddresses: [String] = contact.emailAddresses.map { $0.value as String }
+        data["emailAddresses"] = emailAddresses
+        let postalAddresses: [String] = contact.postalAddresses.map { $0.value.street }
+        data["postalAddresses"] = postalAddresses
+        let numbers: [String] = contact.phoneNumbers.compactMap { $0.value.stringValue as String }
         data["phoneNumbers"] = numbers
 
         result(data)
@@ -55,21 +46,12 @@ class MultiPickerHandler: PickerHandler {
          for contact in contacts {
              var contactInfo = Dictionary<String, Any>()
              contactInfo["fullName"] = CNContactFormatter.string(from: contact, style: CNContactFormatterStyle.fullName)
-             if let givenName = contact.givenName {
-                 contactInfo["givenName"] = givenName
-             }
-             if let familyName = contact.familyName {
-                 contactInfo["familyName"] = familyName
-             }
-             if let emailAddresses = contact.emailAddresses {
-                 let emailAddresses: [String] = emailAddresses.compactMap(\.value)
-                 contactInfo["emailAddresses"] = emailAddresses
-             }
-             if let postalAddresses = contact.postalAddresses {
-                 let postalAddresses: [String] = postalAddresses.compactMap(\.value)
-                 contactInfo["postalAddresses"] = postalAddresses
-             }
-
+             contactInfo["givenName"] = contact.givenName
+             contactInfo["familyName"] = contact.familyName
+             let emailAddresses: [String] = contact.emailAddresses.map { $0.value as String }
+             contactInfo["emailAddresses"] = emailAddresses
+             let postalAddresses: [String] = contact.postalAddresses.map { $0.value.street }
+             contactInfo["postalAddresses"] = postalAddresses
              let numbers: [String] = contact.phoneNumbers.compactMap { $0.value.stringValue as String }
              contactInfo["phoneNumbers"] = numbers
 
@@ -103,7 +85,7 @@ var _delegate: PickerHandler?;
               _delegate = single ? SinglePickerHandler(result: result) : MultiPickerHandler(result: result);
               let contactPicker = CNContactPickerViewController()
               contactPicker.delegate = _delegate
-              contactPicker.displayedPropertyKeys = [CNContactPhoneNumbersKey]
+              contactPicker.displayedPropertyKeys = [CNContactFamilyNameKey, CNContactGivenNameKey, CNContactPhoneNumbersKey, CNContactEmailAddressesKey, CNContactPostalAddressesKey]
               
               // find proper keyWindow
               var keyWindow: UIWindow? = nil
