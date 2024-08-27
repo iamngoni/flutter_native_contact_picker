@@ -95,25 +95,94 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
     }
 
     data?.data?.let { contactUri ->
-      val cursor = activity!!.contentResolver.query(contactUri, null, null, null, null)
-      cursor?.use {
-        it.moveToFirst()
-       // val phoneType = it.getInt(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE))
-       // val customLabel = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.LABEL))
-       // val label = ContactsContract.CommonDataKinds.Email.getTypeLabel(activity!!.resources, phoneType, customLabel) as String
-        val number = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-        val fullName = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
-       // val phoneNumber = HashMap<String, Any>()
-       // phoneNumber.put("number", number)
-       // phoneNumber.put("label", label)
-        val contact = HashMap<String, Any>()
-        contact.put("fullName", fullName)
-        contact.put("phoneNumbers", listOf(number))
-        pendingResult?.success(contact)
-        pendingResult = null
-        return@use true
+      val contentResolver = activity!!.contentResolver
+      val contact = HashMap<String, Any>()
+
+      // Query for basic contact information
+      contentResolver.query(contactUri, null, null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) {
+          val id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
+          val displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
+          contact["fullName"] = displayName
+
+          // Query for phone numbers
+          val phoneNumbers = mutableListOf<String>()
+          contentResolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            null,
+            "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+            arrayOf(id),
+            null
+          )?.use { phoneCursor ->
+            while (phoneCursor.moveToNext()) {
+              val phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+              phoneNumbers.add(phoneNumber)
+            }
+          }
+          contact["phoneNumbers"] = phoneNumbers
+
+          // Query for structured name (first name, last name)
+          contentResolver.query(
+            ContactsContract.Data.CONTENT_URI,
+            arrayOf(
+              ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME,
+              ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME
+            ),
+            "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+            arrayOf(id, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE),
+            null
+          )?.use { nameCursor ->
+            if (nameCursor.moveToFirst()) {
+              val firstName = nameCursor.getString(nameCursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME))
+              val lastName = nameCursor.getString(nameCursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME))
+              contact["givenName"] = firstName ?: ""
+              contact["familyName"] = lastName ?: ""
+            }
+          }
+
+          // Query for email addresses
+          val emails = mutableListOf<String>()
+          contentResolver.query(
+            ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+            null,
+            "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
+            arrayOf(id),
+            null
+          )?.use { emailCursor ->
+            while (emailCursor.moveToNext()) {
+              val email = emailCursor.getString(emailCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.ADDRESS))
+              emails.add(email)
+            }
+          }
+          contact["emailAddresses"] = emails
+
+          // Query for postal addresses
+          val addresses = mutableListOf<String>()
+          contentResolver.query(
+            ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_URI,
+            null,
+            "${ContactsContract.CommonDataKinds.StructuredPostal.CONTACT_ID} = ?",
+            arrayOf(id),
+            null
+          )?.use { addressCursor ->
+            while (addressCursor.moveToNext()) {
+              val address = addressCursor.getString(addressCursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredPostal.FORMATTED_ADDRESS))
+              addresses.add(address)
+            }
+          }
+          contact["postalAddresses"] = addresses
+        }
       }
+
+      pendingResult?.success(contact)
+      pendingResult = null
+      return true
     }
+
+    pendingResult?.success(null)
+    pendingResult = null
+    return false
+  }
 
     pendingResult?.success(null)
     pendingResult = null
