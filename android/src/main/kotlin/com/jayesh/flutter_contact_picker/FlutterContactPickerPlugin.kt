@@ -18,7 +18,7 @@ import java.util.*
 
 /** FlutterContactPickerPlugin */
 public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
-        ActivityAware, PluginRegistry.ActivityResultListener{
+  ActivityAware, PluginRegistry.ActivityResultListener{
   /// The MethodChannel that will the communication between Flutter and native Android
   ///
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -52,7 +52,7 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
       }
       pendingResult = result
 
-      val i = Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)
+      val i = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
       activity?.startActivityForResult(i, PICK_CONTACT)
     } else {
       result.notImplemented()
@@ -95,94 +95,64 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
     }
 
     data?.data?.let { contactUri ->
-      val contentResolver = activity!!.contentResolver
-      val contact = HashMap<String, Any>()
-
-      // Query for basic contact information
-      contentResolver.query(contactUri, null, null, null, null)?.use { cursor ->
+      val cursor = activity!!.contentResolver.query(contactUri, null, null, null, null)
+      cursor?.use { cursor ->
         if (cursor.moveToFirst()) {
-          val id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
-          val displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
-          contact["fullName"] = displayName
+          val contact = HashMap<String, Any>()
 
-          // Query for phone numbers
-          val phoneNumbers = mutableListOf<String>()
-          contentResolver.query(
-            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-            null,
-            "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
-            arrayOf(id),
-            null
-          )?.use { phoneCursor ->
-            while (phoneCursor.moveToNext()) {
-              val phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-              phoneNumbers.add(phoneNumber)
-            }
+          // Safely get fullName
+          val fullNameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+          if (fullNameIndex != -1) {
+            contact["fullName"] = cursor.getString(fullNameIndex) ?: ""
           }
-          contact["phoneNumbers"] = phoneNumbers
 
-          // Query for structured name (first name, last name)
-          contentResolver.query(
-            ContactsContract.Data.CONTENT_URI,
-            arrayOf(
-              ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME,
-              ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME
-            ),
-            "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
-            arrayOf(id, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE),
-            null
-          )?.use { nameCursor ->
-            if (nameCursor.moveToFirst()) {
-              val firstName = nameCursor.getString(nameCursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME))
-              val lastName = nameCursor.getString(nameCursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME))
-              contact["givenName"] = firstName ?: ""
-              contact["familyName"] = lastName ?: ""
+          // Safely get phone number
+          val hasPhoneNumber = cursor.getInt(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))
+          if (hasPhoneNumber > 0) {
+            val phoneCursor = activity!!.contentResolver.query(
+              ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+              null,
+              ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+              arrayOf(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))),
+              null
+            )
+            phoneCursor?.use { phone ->
+              val phoneNumbers = mutableListOf<String>()
+              while (phone.moveToNext()) {
+                val numberIndex = phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                if (numberIndex != -1) {
+                  phoneNumbers.add(phone.getString(numberIndex))
+                }
+              }
+              contact["phoneNumbers"] = phoneNumbers
             }
           }
 
-          // Query for email addresses
-          val emails = mutableListOf<String>()
-          contentResolver.query(
+          // Safely get email
+          val emailCursor = activity!!.contentResolver.query(
             ContactsContract.CommonDataKinds.Email.CONTENT_URI,
             null,
-            "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
-            arrayOf(id),
+            ContactsContract.CommonDataKinds.Email.CONTACT_ID + " = ?",
+            arrayOf(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))),
             null
-          )?.use { emailCursor ->
-            while (emailCursor.moveToNext()) {
-              val email = emailCursor.getString(emailCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.ADDRESS))
-              emails.add(email)
+          )
+          emailCursor?.use { email ->
+            val emailAddresses = mutableListOf<String>()
+            while (email.moveToNext()) {
+              val emailIndex = email.getColumnIndex(ContactsContract.CommonDataKinds.Email.ADDRESS)
+              if (emailIndex != -1) {
+                emailAddresses.add(email.getString(emailIndex))
+              }
             }
+            contact["emailAddresses"] = emailAddresses
           }
-          contact["emailAddresses"] = emails
 
-          // Query for postal addresses
-          val addresses = mutableListOf<String>()
-          contentResolver.query(
-            ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_URI,
-            null,
-            "${ContactsContract.CommonDataKinds.StructuredPostal.CONTACT_ID} = ?",
-            arrayOf(id),
-            null
-          )?.use { addressCursor ->
-            while (addressCursor.moveToNext()) {
-              val address = addressCursor.getString(addressCursor.getColumnIndex(ContactsContract.CommonDataKinds.StructuredPostal.FORMATTED_ADDRESS))
-              addresses.add(address)
-            }
-          }
-          contact["postalAddresses"] = addresses
+          pendingResult?.success(contact)
+          pendingResult = null
+          return true
         }
       }
-
-      pendingResult?.success(contact)
-      pendingResult = null
-      return true
     }
-
-    pendingResult?.success(null)
-    pendingResult = null
-    return false
-  }
 
     pendingResult?.success(null)
     pendingResult = null

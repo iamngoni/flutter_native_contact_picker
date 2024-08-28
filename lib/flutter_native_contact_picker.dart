@@ -32,6 +32,7 @@ class Contact {
     this.lastName,
     this.phoneNumbers,
     this.emailAddresses,
+    this.postalAddresses,
   });
 
   factory Contact.fromMap(Map<dynamic, dynamic> map) {
@@ -39,8 +40,21 @@ class Contact {
       fullName: map['fullName'],
       firstName: map['givenName'],
       lastName: map['familyName'],
-      phoneNumbers: map['phoneNumbers'].cast<String>(),
-      emailAddresses: map['emailAddresses'].cast<String>(),
+      phoneNumbers: map['phoneNumbers'] != null
+          ? (map['phoneNumbers'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList()
+          : null,
+      emailAddresses: map['emailAddresses'] != null
+          ? (map['emailAddresses'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList()
+          : null,
+      postalAddresses: map['postalAddresses'] != null
+          ? (map['postalAddresses'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList()
+          : null,
     );
   }
 
@@ -59,8 +73,11 @@ class Contact {
   /// The phone number of the contact.
   final List<String>? phoneNumbers;
 
+  /// The postal address of the contact.
+  final List<String>? postalAddresses;
+
   @override
-  String toString() => '$firstName $lastName ($fullName). Phone: $phoneNumbers, Email: $emailAddresses';
+  String toString() => '$firstName $lastName ($fullName). Phone: $phoneNumbers, Email: $emailAddresses, Postal: $postalAddresses';
 }
 
 /// Represents a phone number selected by the user.
