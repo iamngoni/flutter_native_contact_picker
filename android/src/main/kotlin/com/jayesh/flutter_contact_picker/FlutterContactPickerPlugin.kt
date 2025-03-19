@@ -1,6 +1,6 @@
 package com.jayesh.flutter_contact_picker
 
-import androidx.annotation.NonNull;
+import androidx.annotation.NonNull
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -31,7 +31,7 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "flutter_native_contact_picker")
-    channel.setMethodCallHandler(this);
+    channel.setMethodCallHandler(this)
   }
 
   // This static function is optional and equivalent to onAttachedToEngine. It supports the old
@@ -66,13 +66,10 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
 
   override fun onAttachedToActivity(@NonNull p0: ActivityPluginBinding) {
     this.activity = p0.activity
-
-//    channel?.setMethodCallHandler(this)
     p0.addActivityResultListener(this)
   }
 
   override fun onDetachedFromActivityForConfigChanges() {
-//    p0.removeActivityResultListener(this)
     this.activity = null
   }
 
@@ -100,7 +97,16 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
       cursor?.use { cursor ->
         if (cursor.moveToFirst()) {
           val contact = HashMap<String, Any>()
-          val contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
+
+          // Safely get contact ID
+          val idColumnIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID)
+          val contactId = if (idColumnIndex != -1) cursor.getString(idColumnIndex) else null
+
+          if (contactId == null) {
+            pendingResult?.success(null)
+            pendingResult = null
+            return true
+          }
 
           // Safely get fullName
           val fullNameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
@@ -136,7 +142,9 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
           }
 
           // Safely get phone number
-          val hasPhoneNumber = cursor.getInt(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))
+          val hasPhoneNumberIndex = cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)
+          val hasPhoneNumber = if (hasPhoneNumberIndex != -1) cursor.getInt(hasPhoneNumberIndex) else 0
+
           if (hasPhoneNumber > 0) {
             val phoneCursor = activity!!.contentResolver.query(
               ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
