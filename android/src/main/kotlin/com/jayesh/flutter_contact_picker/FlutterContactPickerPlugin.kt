@@ -99,11 +99,39 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
       cursor?.use { cursor ->
         if (cursor.moveToFirst()) {
           val contact = HashMap<String, Any>()
+          val contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
 
           // Safely get fullName
           val fullNameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
           if (fullNameIndex != -1) {
             contact["fullName"] = cursor.getString(fullNameIndex) ?: ""
+          }
+
+          // Get first name and last name separately
+          val nameCursor = activity!!.contentResolver.query(
+            ContactsContract.Data.CONTENT_URI,
+            null,
+            "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+            arrayOf(
+              contactId,
+              ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE
+            ),
+            null
+          )
+
+          nameCursor?.use { name ->
+            if (name.moveToFirst()) {
+              val firstNameIndex = name.getColumnIndex(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME)
+              val lastNameIndex = name.getColumnIndex(ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME)
+
+              if (firstNameIndex != -1) {
+                contact["givenName"] = name.getString(firstNameIndex) ?: ""
+              }
+
+              if (lastNameIndex != -1) {
+                contact["familyName"] = name.getString(lastNameIndex) ?: ""
+              }
+            }
           }
 
           // Safely get phone number
@@ -113,7 +141,7 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
               ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
               null,
               ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-              arrayOf(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))),
+              arrayOf(contactId),
               null
             )
             phoneCursor?.use { phone ->
@@ -133,7 +161,7 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
             ContactsContract.CommonDataKinds.Email.CONTENT_URI,
             null,
             ContactsContract.CommonDataKinds.Email.CONTACT_ID + " = ?",
-            arrayOf(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))),
+            arrayOf(contactId),
             null
           )
           emailCursor?.use { email ->
@@ -160,13 +188,6 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
   }
 
   companion object {
-
     private const val PICK_CONTACT = 2015
-
-//    @JvmStatic
-//    fun registerWith(registrar: Registrar) {
-//      val channel = MethodChannel(registrar.messenger(), "contact_picker")
-//      channel.setMethodCallHandler(ContactpickerPlugin(registrar, channel))
-//    }
   }
 }
