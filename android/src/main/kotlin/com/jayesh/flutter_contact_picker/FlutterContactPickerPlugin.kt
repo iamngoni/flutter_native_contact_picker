@@ -10,6 +10,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 import android.app.Activity
 import android.app.Activity.RESULT_OK
 import android.content.Intent
+import android.util.Log
 import android.provider.ContactsContract
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding

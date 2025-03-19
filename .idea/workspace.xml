@@ -6,8 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="598c474d-43b0-4de2-b592-41d2754d222c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/flutter_native_contact_picker.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/flutter_native_contact_picker.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/src/main/kotlin/com/jayesh/flutter_contact_picker/FlutterContactPickerPlugin.kt" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/kotlin/com/jayesh/flutter_contact_picker/FlutterContactPickerPlugin.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,7 +81,8 @@
       <workItem from="1742388318080" duration="458000" />
       <workItem from="1742388821980" duration="97000" />
       <workItem from="1742389471472" duration="157000" />
-      <workItem from="1742389888997" duration="154000" />
+      <workItem from="1742389888997" duration="268000" />
+      <workItem from="1742390665648" duration="29000" />
     </task>
     <servers />
   </component>
