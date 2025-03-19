@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -36,6 +37,7 @@ class Contact {
   });
 
   factory Contact.fromMap(Map<dynamic, dynamic> map) {
+    log('Map Data -> $map');
     return Contact(
       fullName: map['fullName'],
       firstName: map['givenName'],
@@ -77,7 +79,8 @@ class Contact {
   final List<String>? postalAddresses;
 
   @override
-  String toString() => '$firstName $lastName ($fullName). Phone: $phoneNumbers, Email: $emailAddresses, Postal: $postalAddresses';
+  String toString() =>
+      '$firstName $lastName ($fullName). Phone: $phoneNumbers, Email: $emailAddresses, Postal: $postalAddresses';
 }
 
 /// Represents a phone number selected by the user.
