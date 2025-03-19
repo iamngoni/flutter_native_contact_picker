@@ -175,6 +175,9 @@ public class FlutterContactPickerPlugin: FlutterPlugin, MethodCallHandler,
             contact["emailAddresses"] = emailAddresses
           }
 
+          // Log the contact data for debugging
+          Log.d("ContactPicker", "Contact data: $contact")
+
           pendingResult?.success(contact)
           pendingResult = null
           return true
